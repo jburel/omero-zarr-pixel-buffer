@@ -41,6 +41,8 @@ public class OmeroAmazonS3ClientFactory extends AmazonS3ClientFactory {
 
     public static final String ENDPOINT = "https://s3.amazonaws.com";
 
+    public static final String ANONYMOUS_PROFILE = "s3fs_anonymous";
+
     private static final org.slf4j.Logger log =
             LoggerFactory.getLogger(OmeroAmazonS3ClientFactory.class);
 
@@ -60,16 +62,24 @@ public class OmeroAmazonS3ClientFactory extends AmazonS3ClientFactory {
                     + " Please use either named profiles or instance"
                     + " profile credentials.");
         }
-        boolean anonymous = Boolean.parseBoolean(
-                (String) props.get("s3fs_anonymous"));
-        anonymous = true;
+
+        boolean anonymous = false;
+        try {
+            ProfileCredentialsProvider pcp = new ProfileCredentialsProvider(ANONYMOUS_PROFILE);
+            String keyID = pcp.getCredentials().getAWSAccessKeyId();
+            String secretKey = pcp.getCredentials().getAWSSecretKey();
+            anonymous = ANONYMOUS_PROFILE.equals(keyID) && ANONYMOUS_PROFILE.equals(secretKey);
+
+        } catch (Exception e) {
+            log.error("Failed to create credentials provider for anonymous profile", e);
+        }
+        System.out.println("Anonymous: " + anonymous);
         if (anonymous) {
             log.debug("Using anonymous credentials");
             return new AWSStaticCredentialsProvider(
                     new AnonymousAWSCredentials());
         } else {
-            String profileName =
-                    (String) props.get("s3fs_credential_profile_name");
+            String profileName = (String) props.get("s3fs_credential_profile_name");
             // Same instances and order from DefaultAWSCredentialsProviderChain
             return new AWSCredentialsProviderChain(
                     new ProfileCredentialsProvider(profileName),
