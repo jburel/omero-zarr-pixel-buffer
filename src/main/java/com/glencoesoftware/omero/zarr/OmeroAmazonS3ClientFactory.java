@@ -79,7 +79,7 @@ public class OmeroAmazonS3ClientFactory extends AmazonS3ClientFactory {
             anonymous = ANONYMOUS_PROFILE.equals(keyID) && ANONYMOUS_PROFILE.equals(secretKey);
 
         } catch (Exception e) {
-            log.error("Failed to create credentials provider for anonymous profile", e);
+            log.debug("Failed to create credentials provider for anonymous profile", e);
         }
         if (anonymous) {
             log.debug("Using anonymous credentials");
