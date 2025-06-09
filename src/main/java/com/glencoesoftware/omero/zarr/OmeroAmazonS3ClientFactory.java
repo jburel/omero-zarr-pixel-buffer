@@ -39,8 +39,14 @@ import com.upplication.s3fs.AmazonS3ClientFactory;
 public class OmeroAmazonS3ClientFactory extends AmazonS3ClientFactory {
 
 
+    /**
+     * Default end point
+     */
     public static final String ENDPOINT = "https://s3.amazonaws.com";
 
+    /**
+     * See https://github.com/lasersonlab/Amazon-S3-FileSystem-NIO2
+     */
     public static final String ANONYMOUS_PROFILE = "s3fs_anonymous";
 
     private static final org.slf4j.Logger log =
@@ -73,7 +79,6 @@ public class OmeroAmazonS3ClientFactory extends AmazonS3ClientFactory {
         } catch (Exception e) {
             log.error("Failed to create credentials provider for anonymous profile", e);
         }
-        System.out.println("Anonymous: " + anonymous);
         if (anonymous) {
             log.debug("Using anonymous credentials");
             return new AWSStaticCredentialsProvider(
