@@ -186,50 +186,6 @@ public class ZarrPixelBufferTest {
     }
 
     public Path writeTestZarr(
-        int sizeT,
-        int sizeC,
-        int sizeZ,
-        int sizeY,
-        int sizeX,
-        String pixelType,
-        int resolutions,
-        String order) throws IOException {
-
-            Path input = fake(
-                "sizeT", Integer.toString(sizeT),
-                "sizeC", Integer.toString(sizeC),
-                "sizeZ", Integer.toString(sizeZ),
-                "sizeY", Integer.toString(sizeY),
-                "sizeX", Integer.toString(sizeX),
-                "pixelType", pixelType,
-                "resolutions", Integer.toString(resolutions));
-        Path output = tmpDir.getRoot().toPath().resolve("output.zarr");
-        if (order != null) {
-            assertBioFormats2Raw(input, output, "--dimension-order", order);
-        } else {
-            assertBioFormats2Raw(input, output);
-        }
-        
-        List<Object> msArray = new ArrayList<>();
-        Map<String, Object> msData = new HashMap<>();
-        Map<String, Object> msMetadata = new HashMap<>();
-        msMetadata.put("method", "loci.common.image.SimpleImageScaler");
-        msMetadata.put("version", "Bio-Formats 6.5.1");
-        msData.put("metadata", msMetadata);
-        if (order != null) {
-            msData.put("axes", getAxes(new StringBuffer(order).reverse().toString()));
-        }
-        msData.put("datasets", getDatasets(resolutions));
-        msData.put("version", "0.1");
-        msArray.add(msData);
-        ZarrGroup z = ZarrGroup.open(output.resolve("0"));
-        Map<String,Object> attrs = new HashMap<String, Object>();
-        attrs.put("multiscales", msArray);
-        z.writeAttributes(attrs);
-        return output;
-            
-        }
-    public Path writeTestZarr(
             int sizeT,
             int sizeC,
             int sizeZ,
@@ -237,8 +193,31 @@ public class ZarrPixelBufferTest {
             int sizeX,
             String pixelType,
             int resolutions) throws IOException {
-        return writeTestZarr(sizeT, sizeC, sizeZ, sizeY, sizeX, pixelType,
-                resolutions, null);
+                Path input = fake(
+                    "sizeT", Integer.toString(sizeT),
+                    "sizeC", Integer.toString(sizeC),
+                    "sizeZ", Integer.toString(sizeZ),
+                    "sizeY", Integer.toString(sizeY),
+                    "sizeX", Integer.toString(sizeX),
+                    "pixelType", pixelType,
+                    "resolutions", Integer.toString(resolutions));
+            Path output = tmpDir.getRoot().toPath().resolve("output.zarr");
+            assertBioFormats2Raw(input, output);
+            
+            List<Object> msArray = new ArrayList<>();
+            Map<String, Object> msData = new HashMap<>();
+            Map<String, Object> msMetadata = new HashMap<>();
+            msMetadata.put("method", "loci.common.image.SimpleImageScaler");
+            msMetadata.put("version", "Bio-Formats 6.5.1");
+            msData.put("metadata", msMetadata);
+            msData.put("datasets", getDatasets(resolutions));
+            msData.put("version", "0.1");
+            msArray.add(msData);
+            ZarrGroup z = ZarrGroup.open(output.resolve("0"));
+            Map<String,Object> attrs = new HashMap<String, Object>();
+            attrs.put("multiscales", msArray);
+            z.writeAttributes(attrs);
+            return output;
     }
 
     List<Map<String, String>> getDatasets(int resolutions) {
@@ -857,11 +836,25 @@ public class ZarrPixelBufferTest {
         Pixels pixels = new Pixels(
                 null, new PixelsType(PixelsType.VALUE_INT32), 
                 sizeX, sizeY, sizeZ, sizeC, sizeT, "", new DimensionOrder(order));
-        Path output = writeTestZarr(
-            sizeT, sizeC, sizeZ, sizeY, sizeX, "int32", resolutions, order);
+        Path testZarrPath = tmpDir.getRoot().toPath().resolve("test.zarr");
+        new TestZarr()
+            .setPath(testZarrPath)
+            .setOverwrite(true)
+            .setSizeX(sizeX)
+            .setSizeY(sizeY)
+            .setSizeZ(sizeZ)
+            .setSizeT(sizeT)
+            .setSizeC(sizeC)
+            .setOrder(new StringBuilder(order).reverse().toString())
+            .setTextX(10)
+            .setTextY(10)
+            .init()
+            .createImage()
+            .createMetadata();
+
         String reverse_order = new StringBuilder(order).reverse().toString();
         try (ZarrPixelBuffer zpbuf =
-                createPixelBuffer(pixels, output.resolve("0"), sizeX, sizeY)) {
+                createPixelBuffer(pixels, testZarrPath.resolve("0"), sizeX, sizeY)) {
             for (int t = 0; t < sizeT; t++) {
                 // Assert timepoint
                 byte[] timepoint = zpbuf.getTimepoint(t).getData().array();
@@ -907,12 +900,28 @@ public class ZarrPixelBufferTest {
         int sizeX = 512;
         int resolutions = 1;
         String order = DimensionOrder.VALUE_XYCTZ;
+        Path testZarrPath = tmpDir.getRoot().toPath().resolve("test.zarr");
+        new TestZarr()
+            .setPath(testZarrPath)
+            .setOverwrite(true)
+            .setSizeX(sizeX)
+            .setSizeY(sizeY)
+            .setSizeZ(sizeZ)
+            .setSizeT(sizeT)
+            .setSizeC(sizeC)
+            .setOrder(new StringBuilder(order).reverse().toString())
+            .setTextX(10)
+            .setTextY(10)
+            .init()
+            .createImage()
+            .createMetadata();
+
+        
         Pixels pixels = new Pixels(
                 null, null, sizeX, sizeY, sizeZ, sizeC, sizeT, "", new DimensionOrder(order));
-        Path output = writeTestZarr(
-                sizeT, sizeC, sizeZ, sizeY, sizeX, "uint8", resolutions, order);
+
         try (ZarrPixelBuffer zpbuf =
-                createPixelBuffer(pixels, output.resolve("0"), sizeX, sizeY)) {
+                createPixelBuffer(pixels, testZarrPath.resolve("0"), sizeX, sizeY)) {
                     Map<Axes, Integer> axes = zpbuf.getAxes();
                     Assert.assertEquals(0, axes.get(Axes.Z).intValue());
                     Assert.assertEquals(1, axes.get(Axes.T).intValue());
