@@ -17,7 +17,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for all branches
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -36,6 +36,7 @@ jobs:
       - name: Fetch all branches
         run: |
           git fetch --all
+
           
       - name: Create or reset merged branch
         run: |
@@ -49,10 +50,16 @@ jobs:
             git checkout ${{ steps.vars.outputs.base_branch }}
             git checkout -b ${{ steps.vars.outputs.merged_branch }}
           fi
+>>>>>>> dom/master
       
       - name: Get all branches except master
         id: branches
         run: |
+<<<<<<< HEAD
+          BRANCHES=$(git branch -r | grep "origin/" | grep -v "origin/${{ steps.vars.outputs.base_branch }}" | grep -v "origin/${{ steps.vars.outputs.merged_branch }}" | grep -v "origin/HEAD" | sed 's/origin\///')
+          echo "Found branches to merge:"
+          echo "$BRANCHES" | sed 's/^/  - /'
+=======
           # Ensure we have all remote branches
           git fetch --all
           
@@ -69,6 +76,7 @@ jobs:
           fi
           
           # Set output
+>>>>>>> dom/master
           echo "branches<<EOF" >> $GITHUB_OUTPUT
           echo "$BRANCHES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -78,6 +86,19 @@ jobs:
           # Read branches from previous step
           echo "Merging branches into ${{ steps.vars.outputs.merged_branch }}..."
           
+<<<<<<< HEAD
+          # Process each branch
+          echo "${{ steps.branches.outputs.branches }}" | while read branch; do
+            if [ -n "$branch" ]; then
+              echo "Merging branch: $branch"
+              git merge --no-edit origin/$branch || {
+                echo "::warning::Merge conflict detected in $branch - skipping this branch"
+                git merge --abort
+                continue
+              }
+            fi
+          done
+=======
           # Debug: Show current branch and its status
           echo "Current branch: $(git branch --show-current)"
           git status
@@ -121,6 +142,7 @@ jobs:
         run: |
           echo "Pushing ${{ steps.vars.outputs.merged_branch }} branch..."
           git push -f origin ${{ steps.vars.outputs.merged_branch }}
+>>>>>>> dom/master
       
       - name: Summary
         id: summary
@@ -134,7 +156,11 @@ jobs:
           echo "branch_list<<EOF" >> $GITHUB_OUTPUT
           echo "$BRANCH_LIST" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+<<<<<<< HEAD
+      
+=======
           
+>>>>>>> dom/master
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
@@ -142,7 +168,11 @@ jobs:
           commit-message: "Merge all feature branches into ${{ steps.vars.outputs.base_branch }}"
           branch: ${{ steps.vars.outputs.merged_branch }}
           base: ${{ steps.vars.outputs.base_branch }}
+<<<<<<< HEAD
+          delete-branch: true
+=======
           delete-branch: false
+>>>>>>> dom/master
           title: "Merge all feature branches into ${{ steps.vars.outputs.base_branch }}"
           body: |
             ## Automated Branch Merge
